@@ -27,7 +27,8 @@ let persons = [
     }
 ]
 app.use(express.json())
-app.use(morgan('tiny'))
+morgan.token('body', (req) => JSON.stringify(req.body))
+app.use(morgan(':method :url  :status :res[content-length] - :response-time ms :body'))
 
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
