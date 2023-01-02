@@ -27,6 +27,13 @@ let persons = [
 ]
 app.use(express.json())
 
+app.delete('/api/persons/:id', (request, response) => {
+    const id = Number(request.params.id)
+    persons = persons.filter(person => person.id !== id)
+    console.log("delete",persons)
+    response.status(204).end()
+  })
+
 app.get('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
     const person = persons.find(person => person.id === id)
