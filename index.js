@@ -1,4 +1,5 @@
 const express = require('express')
+const morgan = require('morgan')
 const app = express()
 console.log('hello world')
 
@@ -26,6 +27,7 @@ let persons = [
     }
 ]
 app.use(express.json())
+app.use(morgan('tiny'))
 
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
