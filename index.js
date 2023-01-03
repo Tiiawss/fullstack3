@@ -1,10 +1,23 @@
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
+const mongoose = require('mongoose')
 const app = express()
 console.log('hello world')
 
 app.use(express.static('build'))
+
+
+const url = `mongodb+srv://fullstack:${password}@cluster0.cs8tnaz.mongodb.net/personsApp?retryWrites=true&w=majority`
+mongoose.connect(url)
+
+const personSchema = new mongoose.Schema({
+  name: String,
+  number: String,
+  
+})
+
+const Person = mongoose.model('Person', personSchema)
 
 let persons = [
     { 
@@ -92,8 +105,9 @@ app.get('/api/persons/:id', (request, response) => {
     }
   })
 app.get('/api/persons', (request, response) => {
-    console.log("get persons", persons)
-    response.json(persons)
+    Person.find({}).then(person => {
+        response.json(person)
+      })
   })
 
 app.get('/info', (request, response) => {
