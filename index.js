@@ -1,7 +1,9 @@
 const express = require('express')
+const morgan = require('morgan')
+const cors = require('cors')
 const app = express()
 console.log('hello world')
-const cors = require('cors')
+
 app.use(express.static('build'))
 
 let persons = [
@@ -33,6 +35,9 @@ let persons = [
 app.use(cors())
 
 app.use(express.json())
+
+morgan.token('body', (req) => JSON.stringify(req.body))
+app.use(morgan(':method :url  :status :res[content-length] - :response-time ms :body'))
 
 app.delete('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
