@@ -7,10 +7,10 @@ const Person = require('./models/person')
 
 const app = express()
 console.log('hello world')
-
+app.use(express.json())
 app.use(express.static('build'))
 app.use(cors())
-app.use(express.json())
+
 
 
 let persons = [
@@ -149,6 +149,7 @@ const errorHandler = (error, request, response, next) => {
     next(error)
 }
 
+//Note that the error-handling middleware has to be the last loaded middleware!
 app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
