@@ -11,7 +11,7 @@ mongoose.connect(url)
     })
 
 const validator = val => {
-        if (val.match(/\d{2,3}[-]\d{3,}/)) {
+        if (val.match(/\d{2,3}[-]\d*/)) {
           console.log(val)
           return true
         } else {
