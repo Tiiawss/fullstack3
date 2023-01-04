@@ -11,20 +11,20 @@ mongoose.connect(url)
     })
 
 const validator = val => {
-        if (val.match(/\d{2,3}[-]\d*/)) {
-          console.log(val)
-          return true
-        } else {
-          console.log(val)
-          return false
-        }
-      }
+    if (val.match(/\d{2,3}[-]\d*/)) {
+        console.log(val)
+        return true
+    } else {
+        console.log(val)
+        return false
+    }
+}
 
 const custom = [validator, 'Number needs to consist of two parts separated by a dash. First part must consist of 2-3 digits.']
 const personSchema = new mongoose.Schema({
-        name: { type: String, minlength: 3, required: true },
-        number: { type: String, minlength: 8, required: true, validate: custom }
-      })
+    name: { type: String, minlength: 3, required: true },
+    number: { type: String, minlength: 8, required: true, validate: custom }
+})
 
 personSchema.set('toJSON', {
     transform: (document, returnedObject) => {
