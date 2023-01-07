@@ -1,0 +1,10 @@
+POST http://localhost:3003/api/blogs
+Content-Type: application/json
+
+{ 
+
+    "name": "Leivonta", 
+    "author": "Maija majava",
+    "url": "http://jtn.com",
+    "likes": 5
+}
