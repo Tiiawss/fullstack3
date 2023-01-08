@@ -1,82 +1,99 @@
 const blogsRouter = require('express').Router()
-
-
+const jwt = require('jsonwebtoken')
 
 const Blog = require('../models/blog')
+const User = require('../models/user')
 
 
+const getTokenFrom = request => {
+    const authorization = request.get('authorization')
+    if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
+        return authorization.substring(7)
+    }
+    return null
+}
 console.log('hello world')
 
 
 blogsRouter.get('/', async (request, response) => {
-    const blogs = await Blog.find({})
+    const blogs = await Blog
+        .find({})
+        .populate('user', { username: 1, name: 1 })
+
     response.json(blogs)
 })
 
-blogsRouter.post('/', async (request, response) => {
-    if (request.body.url === '' ||
-    request.body.title === '') {
-        console.log('täällä')
-        response.status(400).end()
-    }else{
+blogsRouter.get('/:id', async (request, response) => {
+    const blog = await Blog.findById(request.params.id)
 
-
-        const body = request.body
-
-        const blog = new Blog({
-            title: body.title,
-            author: body.author,
-            url: body.url,
-            likes: body.likes || 0
-        })
-
-        const savedBlog = await blog.save()
-        response.status(201).json(savedBlog)
+    if (blog) {
+        response.json(blog.toJSON())
+    } else {
+        response.status(404).end()
     }
 })
 
-blogsRouter.put('/:id', async (request, response, next) => {
-    const body = request.body
-
-    const blog = {
-        title: body.title,
-        author: body.author,
-        url: body.url,
-        likes: body.likes || 0
+blogsRouter.post('/', async (request, response) => {
+    const { title, author, url, likes } = request.body
+    const token = getTokenFrom(request)
+    const decodedToken = jwt.verify(token, process.env.SECRET)
+    if (!token || !decodedToken.id) {
+        return response.status(401).json({ error: 'token missing or invalid' })
     }
-    Blog.findByIdAndUpdate(request.params.id, blog, { new: true })
-        .then(updatedBlog => {
-            response.json(updatedBlog)
-        })
-        .catch(error => next(error))
+    const user = await User.findById(decodedToken.id)
 
+    const blog = new Blog({
+        title,
+        author,//ehkä näin?? tai vaihda ylös eri ylinrivi
+        url,
+        likes,
+        user: user._id
+    })
+
+    const savedBlog = await blog.save()
+    user.blogs = user.blogs.concat(savedBlog._id)
+    await user.save()
+
+    response.status(201).json(savedBlog)
 })
 
 blogsRouter.delete('/:id', async (request, response) => {
-    await Blog.findByIdAndRemove(request.params.id)
-    response.status(204).end()
+    const blogRemove = await Blog.findById(request.params.id)
+    if (!request.user) {
+        return response.status(401).json(
+            { error: 'token missing or invalid' }
+        )
+    }
+    if (blogRemove.user.toString() === request.user._id.toString()) {
+        await Blog.findByIdAndRemove(request.params.id)
+        return response.status(204).end()
+    }
+    return response.status(401).json(
+        { error: 'not the right user to remove' }
+    )
 })
 
-
-const unknownEndpoint = (request, response) => {
-    response.status(404).send({ error: 'unknown endpoint' })
-}
-
-blogsRouter.use(unknownEndpoint)
-
-const errorHandler = (error, request, response, next) => {
-    console.error(error.message)
-
-    if (error.name === 'CastError') {
-        return response.status(400).send({ error: 'malformatted id' })
-    } else if (error.name === 'ValidationError') {
-        return response.status(400).json({ error: error.message })
+blogsRouter.put('/:id', async (request, response) => {
+    const blogToUpdate = await Blog.findById(request.params.id)
+    if (!request.user) {
+        return response.status(401).json(
+            { error: 'token missing or invalid' }
+        )
+    }//modifoi
+    if (blogToUpdate.user.toString() === request.user._id.toString()) {
+        const blog = await Blog.findByIdAndUpdate(
+            request.params.id,
+            request.body,
+            { new: true }
+        )
+        return response.status(200).json(blog)
     }
 
-    next(error)
-}
-
+    return response.status(401).json(
+        { error: 'not allowed to modify' }
+    )
+})
 //blog that the error-handling middleware has to be the last loaded middleware!
-blogsRouter.use(errorHandler)
+
 module.exports = blogsRouter
 
