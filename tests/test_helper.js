@@ -13,7 +13,10 @@ const initialBlogs = [
         url: 'http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html',
         likes: 0,
     },
+
 ]
+
+
 const nonExistingId = async () => {
     const blog = new Blog({ title: 'willremovethissoon', author: 'jtn', url: 'http/jtn', likes: 8 })
     await blog.save()
@@ -30,5 +33,5 @@ const blogsInDb = async () => {
 module.exports = {
     initialBlogs,
     nonExistingId,
-    blogsInDb
+    blogsInDb,
 }

@@ -1,17 +1,12 @@
 const blogsRouter = require('express').Router()
-const jwt = require('jsonwebtoken')
+//const jwt = require('jsonwebtoken')
 
 const Blog = require('../models/blog')
 const User = require('../models/user')
 
 
-const getTokenFrom = request => {
-    const authorization = request.get('authorization')
-    if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
-        return authorization.substring(7)
-    }
-    return null
-}
+
+
 console.log('hello world')
 
 
@@ -35,52 +30,49 @@ blogsRouter.get('/:id', async (request, response) => {
 
 blogsRouter.post('/', async (request, response) => {
     const { title, author, url, likes } = request.body
-    const token = getTokenFrom(request)
-    const decodedToken = jwt.verify(token, process.env.SECRET)
-    if (!token || !decodedToken.id) {
-        return response.status(401).json({ error: 'token missing or invalid' })
-    }
-    const user = await User.findById(decodedToken.id)
 
-    const blog = new Blog({
+    if (!request.token || !request.user.id) {
+        return response.status(401).json({ error: 'missing or invalid token' })
+    }
+    const user = await User.findById(request.user.id)
+
+    const blog =  new Blog({
         title,
-        author,//ehkä näin?? tai vaihda ylös eri ylinrivi
+        author,
         url,
-        likes,
+        likes: likes || 0,
         user: user._id
     })
+    const savedBlog = blog.save(blog)
 
-    const savedBlog = await blog.save()
     user.blogs = user.blogs.concat(savedBlog._id)
     await user.save()
-
     response.status(201).json(savedBlog)
 })
 
 blogsRouter.delete('/:id', async (request, response) => {
-    const blogRemove = await Blog.findById(request.params.id)
-    if (!request.user) {
-        return response.status(401).json(
-            { error: 'token missing or invalid' }
-        )
+    const blog = await Blog.findById(request.params.id)
+    if (!blog) {
+        return response.status(400).json({ error: 'no blogs with given id' })
     }
-    if (blogRemove.user.toString() === request.user._id.toString()) {
-        await Blog.findByIdAndRemove(request.params.id)
-        return response.status(204).end()
+    if (!request.token || blog.user.toString() !== request.user.id) {
+        return response.status(401).json({ error: 'missing or invalid token' })
     }
-    return response.status(401).json(
-        { error: 'not the right user to remove' }
-    )
+
+    await Blog.findByIdAndRemove(request.params.id)
+    response.status(204).end()
 })
 
 blogsRouter.put('/:id', async (request, response) => {
-    const blogToUpdate = await Blog.findById(request.params.id)
+    const blog = await Blog.findById(request.params.id)
+
+
     if (!request.user) {
         return response.status(401).json(
             { error: 'token missing or invalid' }
         )
-    }//modifoi
-    if (blogToUpdate.user.toString() === request.user._id.toString()) {
+    }
+    if (blog.user.toString() === request.user._id.toString()) {
         const blog = await Blog.findByIdAndUpdate(
             request.params.id,
             request.body,
